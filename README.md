@@ -5,8 +5,9 @@
 
 写下自己一周工作的review和接下来的计划，并提交到此项目的[issues](https://github.com/JinhangZhu/project-diary/issues)。
 
-**提交时间：**每周日提交
-**提交地址：**[`jinhangzhu/project-diary/issues`](https://github.com/JinhangZhu/project-diary/issues)👉🏻点击`New issue`
+**提交时间：** 每周日提交
+
+**提交地址：** [`jinhangzhu/project-diary/issues`](https://github.com/JinhangZhu/project-diary/issues)👉🏻点击`New issue`
 
 ## 格式
 

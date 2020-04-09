@@ -7,7 +7,7 @@
 
 **提交时间：** 每周日提交
 
-**提交地址：** [`jinhangzhu/project-diary/issues`](https://github.com/JinhangZhu/project-diary/issues)👉🏻点击`New issue`
+**提交地址：** [`jinhangzhu/project-diary/issues`](https://github.com/JinhangZhu/project-diary/issues)👉🏻点击[`New issue`](https://github.com/JinhangZhu/project-diary/issues/new/choose)
 
 ## 格式
 

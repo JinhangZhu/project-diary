@@ -3,9 +3,7 @@
 
 ## 规则
 
-写下自己一周工作的review和接下来的计划，并提交到此项目的[issues](https://github.com/JinhangZhu/project-diary/issues)。
-
-**提交时间：** 每周日提交
+每周一写下本周计划，期间不断补充直到周日。
 
 **提交地址：** [`jinhangzhu/project-diary/issues`](https://github.com/JinhangZhu/project-diary/issues)👉🏻点击[`New issue`](https://github.com/JinhangZhu/project-diary/issues/new/choose)
 
@@ -17,13 +15,18 @@
 
 > 如：`Week {} - 2020-03-15`
 
-**标签**：`Review`...
+**标签**：`Plan`, `Review`
 
-**内容**：记录自己本周的工作学习内容及下周的安排，总分结构
+**内容**：
+- 周一记录计划
+- 问题，BUG，思考作为回复贴出来
 
 ### Tips
 
-- 重要的是记录下自己这周做了什么以及新的；
+- 首次发布用待定事项，简洁一点最好
+- 重要的是记录下自己这周做了什么
 - 围绕课程，资源，文献的总结，加上链接。
 
-> Reference: [BUCT-Vision/weekly-review](https://github.com/BUCT-Vision/weekly-review)
+> Reference: 
+> - [SuyueLiu/dissertation-diary](https://github.com/SuyueLiu/dissertation-diary)
+> - [BUCT-Vision/weekly-review](https://github.com/BUCT-Vision/weekly-review)

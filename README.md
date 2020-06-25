@@ -15,7 +15,7 @@
 
 > 如：`Week {} - 2020-03-15`
 
-**标签**：`Plan`, `Review`
+**标签**：`Plan`, `In progress`, `Review`
 
 **内容**：
 - 周一记录计划

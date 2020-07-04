@@ -1,9 +1,6 @@
 {
     "P01": [
-        "hand",
-        "1",
-        "left_hand",
-        "right_hand"
+        "hand"
     ],
     "P02": [
         "hand"

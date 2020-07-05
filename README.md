@@ -28,5 +28,6 @@
 - 围绕课程，资源，文献的总结，加上链接。
 
 > Reference: 
-> - [SuyueLiu/dissertation-diary](https://github.com/SuyueLiu/dissertation-diary)
 > - [BUCT-Vision/weekly-review](https://github.com/BUCT-Vision/weekly-review)
+> - [SuyueLiu/dissertation-diary](https://github.com/SuyueLiu/dissertation-diary)
+

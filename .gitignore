@@ -137,8 +137,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# Other repo
+# Other repos
 supervisely-to-darknet/
+YOLOv3-Calculate-Anchor-Boxes/
 
 # Deploy shell
 deploy.sh

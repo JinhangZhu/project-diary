@@ -140,6 +140,7 @@ cython_debug/
 # Other repos
 supervisely-to-darknet/
 YOLOv3-Calculate-Anchor-Boxes/
+yolov3/
 
 # Deploy shell
 deploy.sh

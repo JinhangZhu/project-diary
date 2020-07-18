@@ -141,6 +141,8 @@ cython_debug/
 supervisely-to-darknet/
 YOLOv3-Calculate-Anchor-Boxes/
 yolov3/
+weights/
+stage1-output/
 
 # Deploy shell
 deploy.sh

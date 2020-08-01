@@ -143,6 +143,7 @@ YOLOv3-Calculate-Anchor-Boxes/
 yolov3/
 weights/
 stage1-output/
+kmeans_pytorch/
 
 # Deploy shell
 deploy.sh

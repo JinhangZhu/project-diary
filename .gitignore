@@ -144,6 +144,7 @@ yolov3/
 weights/
 stage1-output/
 kmeans_pytorch/
+open_egohands/
 
 # Deploy shell
 deploy.sh

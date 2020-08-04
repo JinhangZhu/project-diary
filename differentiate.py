@@ -1,21 +1,23 @@
 # Libraries
-import os
+# import os
 import random
-import shutil
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from tabulate import tabulate
+
 from yolov3.utils.utils import plot_one_box
 
+# import shutil
 
-def diff_hands(img, boxes):
+
+def diff_hands(img, boxes, open_size=5, extend_scale=0.5, color_thres=20, bin_thres=100, max_region=False, view=False):
     """Differentiate the predited bounding boxes into two labels. <left_hand>, <right_hand>
     Arguments:
         img: image
-        boxes: predicted bounding boxes, format: (ID, centre_x, centre_y, width, height)
-        #ellipse_info: list of ((x, y), angle) of the fitted ellipse
+        boxes: predicted bounding boxes, format: [(ID, conf, centre_x, centre_y, width, height)]
     Return:
         diff_boxes: differentiated bounding boxes, format: (ID, centre_x, centre_y, width, height), where ID relates to new 'labels'.
     """
@@ -30,15 +32,17 @@ def diff_hands(img, boxes):
 
     elif n_hands == 1:
         # Check extended boxes
-        extracted, exd_boxes = extractHandArm(img, boxes, open_size=5, extend_scale=0.5, color_thres=20)
-        ellipse_info = ellipseFit(extracted, bin_thres=10)
+        extracted, exd_boxes = extractHandArm(img, boxes, open_size=open_size,
+                                              extend_scale=extend_scale, color_thres=color_thres, view=view)
+        ellipse_info = ellipseFit(extracted, bin_thres=bin_thres, max_region=max_region, view=view)
         angle = ellipse_info[0][1]
         boxes[0][0] = identifyOneHand(angle)
 
     elif n_hands == 2:
         # Check a-little-bit extended boxes
-        extracted, exd_boxes = extractHandArm(img, boxes, open_size=5, extend_scale=0.2, color_thres=20)
-        ellipse_info = ellipseFit(extracted, bin_thres=10)
+        extracted, exd_boxes = extractHandArm(img, boxes, open_size=open_size,
+                                              extend_scale=extend_scale, color_thres=color_thres, view=view)
+        ellipse_info = ellipseFit(extracted, bin_thres=bin_thres, max_region=max_region, view=view)
         _, angle1 = ellipse_info[0]
         _, angle2 = ellipse_info[1]
 
@@ -202,7 +206,7 @@ def kmeansMask(region, k=3):
     # print('Most frequently: %s' % most_label)
 
     # 选择性显示/掩膜显示
-    colors = [[random.randint(200, 255) for _ in range(3)] for _ in range(3)]
+    # colors = [[random.randint(200, 255) for _ in range(3)] for _ in range(3)]
 
     masked_region = np.copy(region)
     masked_region = masked_region.reshape((-1, 3))
@@ -259,7 +263,8 @@ def extendRegion(img, boxes, extend_scale=1):
         exd_crops.append(crop_img)
 
     exd_boxes = np.concatenate(
-        (boxes[:, :2], exd_x0.reshape((2, 1)), exd_y0.reshape((2, 1)), exd_x1.reshape((2, 1)), exd_y1.reshape((2, 1))),
+        (boxes[:, :2], exd_x0.reshape((-1, 1)), exd_y0.reshape((-1, 1)),
+         exd_x1.reshape((-1, 1)), exd_y1.reshape((-1, 1))),
         axis=1
     )
 
@@ -307,7 +312,9 @@ def boxes_info(boxes, labels):
         )
 
 
-def get_boxes(path):
+def get_pred_boxes(path):
+    """Get boxes from predictions: cls_id, conf, xmin, ymin, xmax, ymax
+    """
     boxes = []
     with open(path, 'r') as f:
         for line in f:
@@ -318,7 +325,34 @@ def get_boxes(path):
     return boxes
 
 
-def ellipseFit(regions, bin_thres=10, view=False):
+def get_ann_boxes(path):
+    """Get boxes from the annotation of one image: cls_id, cx, cy, w, h
+    """
+    boxes = []
+    with open(path, 'r') as f:
+        for line in f:
+            line = line[:-1].split()
+            line[0] = int(line[0])  # cls id
+            line[1:] = [float(i) for i in line[1:]]  # x y w h
+            boxes.append(line)
+    return boxes
+
+
+def scale_xyxy(x, img_shape, to_image=True):
+    """Rescale to image shape or normalize from image shape.
+    """
+    if to_image:
+        y = torch.zeros_like(x) if isinstance(x, torch.Tensor) else np.zeros_like(x)
+        y[:, 0::2] = x[:, 0::2] * img_shape[1]  # x
+        y[:, 1::2] = x[:, 1::2] * img_shape[0]  # y
+    else:
+        y = torch.zeros_like(x) if isinstance(x, torch.Tensor) else np.zeros_like(x)
+        y[:, 0::2] = x[:, 0::2] / img_shape[1]  # x
+        y[:, 1::2] = x[:, 1::2] / img_shape[0]  # y
+    return y
+
+
+def ellipseFit(regions, bin_thres=10, max_region=False, view=False):
     """Fit ellipses to the objects in the regions.
     Arguments:
         regions: numpy array in RGB, contains objects
@@ -337,7 +371,7 @@ def ellipseFit(regions, bin_thres=10, view=False):
         rc = region.copy()
 
         # Plotting config
-        tl = round(0.002 * (rc.shape[0] + rc.shape[1]) / 2) + 1  # Line thickness
+        tl = round(0.004 * (rc.shape[0] + rc.shape[1]) / 2) + 1  # Line thickness
         tf = max(tl-1, 1)   # Font thickness
         rd = tl
 
@@ -345,7 +379,31 @@ def ellipseFit(regions, bin_thres=10, view=False):
         gray = cv2.cvtColor(rc, cv2.COLOR_RGB2GRAY)
         ret, thresh = cv2.threshold(gray, bin_thres, 255, cv2.THRESH_BINARY)
         contours, hier = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-        cnt = contours[0]
+        try:
+            cnt = contours[0]
+        except IndexError:
+            print("No contours detected!")
+
+        # Find the region with max area
+        if max_region:
+            cv2.drawContours(thresh, contours, -1, (0, 255, 255), 2)
+            area = []
+            for j in range(len(contours)):
+                area.append(cv2.contourArea(contours[j]))
+            max_idx = np.argmax(area)
+            for j in range(max_idx - 1):
+                cv2.fillConvexPoly(thresh, contours[j], 0)
+            cv2.fillConvexPoly(thresh, contours[max_idx], 255)
+
+            kernel = np.ones((5, 5), np.uint8)  # 设置卷积核
+            erosion = cv2.erode(thresh, kernel=kernel)  # 腐蚀操作
+
+            ret, thresh = cv2.threshold(erosion, bin_thres, 255, cv2.THRESH_BINARY)
+            contours, hier = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+            try:
+                cnt = contours[0]
+            except IndexError:
+                print("No contours detected!")
 
         # Ellipse fitting
         ellipse = cv2.fitEllipse(cnt)
@@ -355,14 +413,18 @@ def ellipseFit(regions, bin_thres=10, view=False):
         x, y, angle = int(ellipse[0][0]), int(ellipse[0][1]), int(ellipse[2])
         angle = rectifyAngle(angle)
         res.append(((x, y), angle))
-        label = '({}. {}), {} deg'.format(x, y, angle)
+        label_pos = '({}, {})'.format(x, y)
+        label_ang = '{} deg'.format(angle)
 
         # Annotation
-        cv2.circle(rc, (x, y), rd, [225, 255, 255], -11)
-        cv2.putText(rc, label, (x - 100, y - 20), 0, tl/3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
+        cv2.circle(rc, (x, y), rd, colors[i], -11)
+        cv2.putText(rc, label_pos, (x - 70, y - 20), 0, tl/3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
+        cv2.putText(rc, label_ang, (x - 70, y + 35), 0, tl/3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
         # Plotting
         if view:
+            plt.imshow(thresh, cmap='gray')
+            plt.show()
             plt.imshow(rc)
             plt.show()
     return res
@@ -374,13 +436,15 @@ def rectifyAngle(angle):
     return -angle+90+180*(angle > 90)
 
 
-def save_result(boxes, img, labels, save_path):
-    colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(boxes))]
+def write_result(boxes, img, labels, save_path=None):
+    copy = img.copy()
+    colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(labels))]
     # boxes = scale_coords(torch.Size([320, 512]), boxes, img.shape).round()
     for box in boxes:
         label = '%s %.2f' % (labels[int(box[0])], box[1])
-        plot_one_box(box[2:], img, label=label, color=colors[int(box[0])])
-    cv2.imwrite(save_path, img)
+        plot_one_box(box[2:], copy, label=label, color=colors[int(box[0])])
+    # cv2.imwrite(save_path, img)
+    return copy
 
 
 def isOverlap1D(box1, box2):
@@ -400,7 +464,7 @@ def isOverlap2D(box1, box2):
     """Check if the two 2D boxes overlap.
     Arguments:
         box1, box2: format: (ltx, lty, rbx, rby)
-    Returns: 
+    Returns:
         res: bool, True for overlapping, False for not
     """
     xmin1, ymin1, xmax1, ymax1 = box1

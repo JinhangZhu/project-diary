@@ -39,26 +39,31 @@ def diff_hands(img, boxes, open_size=5, extend_scale=0.5, color_thres=20, bin_th
         boxes[0][0] = identifyOneHand(angle)
 
     elif n_hands == 2:
-        # Check a-little-bit extended boxes
-        extracted, exd_boxes = extractHandArm(img, boxes, open_size=open_size,
-                                              extend_scale=extend_scale, color_thres=color_thres, view=view)
-        ellipse_info = ellipseFit(extracted, bin_thres=bin_thres, max_region=max_region, view=view)
-        _, angle1 = ellipse_info[0]
-        _, angle2 = ellipse_info[1]
+        # Simply by position
+        c_x0 = (boxes[0][2] + boxes[0][4]) / 2  # center x0
+        c_x1 = (boxes[1][2] + boxes[1][4]) / 2  # center x1
+        boxes[0][0] = int(c_x0 > c_x1)
+        boxes[1][0] = int(c_x0 < c_x1)
+        # # Check a-little-bit extended boxes
+        # extracted, exd_boxes = extractHandArm(img, boxes, open_size=open_size,
+        #                                       extend_scale=extend_scale, color_thres=color_thres, view=view)
+        # ellipse_info = ellipseFit(extracted, bin_thres=bin_thres, max_region=max_region, view=view)
+        # _, angle1 = ellipse_info[0]
+        # _, angle2 = ellipse_info[1]
 
-        # Flag that angles are 0-90 and 90-180 separately.
-        isAngleRight1 = identifyOneHand(angle1)
-        isAngleRight2 = identifyOneHand(angle2)
-        isAngleDiff = isAngleRight1 ^ isAngleRight2
+        # # Flag that angles are 0-90 and 90-180 separately.
+        # isAngleRight1 = identifyOneHand(angle1)
+        # isAngleRight2 = identifyOneHand(angle2)
+        # isAngleDiff = isAngleRight1 ^ isAngleRight2
 
-        if not isAngleDiff:
-            c_x0 = (boxes[0][1] + boxes[0][3]) / 2  # center x0
-            c_x1 = (boxes[1][1] + boxes[1][3]) / 2  # center x1
-            boxes[0][0] = int(c_x0 > c_x1)
-            boxes[1][0] = int(c_x0 < c_x1)
-        else:
-            boxes[0][0] = isAngleRight1
-            boxes[1][0] = isAngleRight2
+        # if not isAngleDiff:
+        #     c_x0 = (boxes[0][1] + boxes[0][3]) / 2  # center x0
+        #     c_x1 = (boxes[1][1] + boxes[1][3]) / 2  # center x1
+        #     boxes[0][0] = int(c_x0 > c_x1)
+        #     boxes[1][0] = int(c_x0 < c_x1)
+        # else:
+        #     boxes[0][0] = isAngleRight1
+        #     boxes[1][0] = isAngleRight2
 
     else:   # More hands detected
         # Sort the bounding boxes according to the confidences
@@ -112,61 +117,53 @@ def extractHandArm(img, boxes, open_size=3, extend_scale=1, color_thres=40, view
         # crop = cv2.medianBlur(crop_blur, 5)    # 中值滤波
 
         # 颜色模型阈值分割
-        skin_masked_crop = skinMask(crop)
-        # plt.imshow(skin_masked_crop)
-        # plt.show()
+        masked_crop = skinMask(crop)
+        # masked_crop, _ = kmeansMask(crop)
 
         # 形态学开运算
-        opened_skin_crop = openOperation(skin_masked_crop, open_size)
-        # plt.imshow(opened_skin_crop)
-        # plt.show()
+        opened_skin_crop = openOperation(masked_crop, open_size)
 
-        # 提取平均颜色
-        extract_mask = opened_skin_crop != [0, 0, 0]
-        extract_region = opened_skin_crop[extract_mask[:, :, 0], :]
-        skin_avg = np.mean(extract_region, axis=0)
+        # # 提取平均颜色
+        # extract_mask = opened_skin_crop != [0, 0, 0]
+        # extract_region = opened_skin_crop[extract_mask[:, :, 0], :]
+        # skin_avg = np.mean(extract_region, axis=0)
 
-        # 颜色阈值筛
-        color_masked_crop = colorMask(exd_crop, skin_avg, color_thres)
-        # plt.imshow(color_masked_crop)
-        # plt.show()
+        # # 颜色阈值筛
+        # color_masked_crop = colorMask(exd_crop, skin_avg, color_thres)
 
-        # 颜色模型阈值分割
-        skin_masked_exd_crop = skinMask(color_masked_crop)
-        # plt.imshow(skin_masked_exd_crop)
-        # plt.show()
+        # # 颜色模型阈值分割
+        # skin_masked_exd_crop = skinMask(color_masked_crop)
 
-        # 形态学开运算
-        opened_skin_masked_exd_crop = openOperation(skin_masked_exd_crop)
-        # plt.imshow(opened_skin_masked_exd_crop)
-        # plt.show()
+        # # 形态学开运算
+        # opened_skin_masked_exd_crop = openOperation(skin_masked_exd_crop)
 
         if view:
             plt.figure(figsize=(20, 16))
-            plt.subplot(171)
+            plt.subplot(141)
             plt.imshow(crop)
             plt.title('Original Crop')
-            plt.subplot(172)
-            plt.imshow(skin_masked_crop)
+            plt.subplot(142)
+            plt.imshow(masked_crop)
             plt.title('1st Thresholding')
-            plt.subplot(173)
+            plt.subplot(143)
             plt.imshow(opened_skin_crop)
             plt.title('1st Open Operation')
-            plt.subplot(174)
+            plt.subplot(144)
             plt.imshow(exd_crop)
             plt.title('Extended Crop')
-            plt.subplot(175)
-            plt.imshow(color_masked_crop)
-            plt.title('Color approximation')
-            plt.subplot(176)
-            plt.imshow(skin_masked_exd_crop)
-            plt.title('2nd Thresholding')
-            plt.subplot(177)
-            plt.imshow(opened_skin_masked_exd_crop)
-            plt.title('2nd Open Operation')
+            # plt.subplot(155)
+            # plt.imshow(color_masked_crop)
+            # plt.title('Color approximation')
+            # plt.subplot(176)
+            # plt.imshow(skin_masked_exd_crop)
+            # plt.title('2nd Thresholding')
+            # plt.subplot(177)
+            # plt.imshow(opened_skin_masked_exd_crop)
+            # plt.title('2nd Open Operation')
             plt.show()
 
-        res.append(opened_skin_masked_exd_crop)
+        # res.append(opened_skin_masked_exd_crop)
+        res.append(opened_skin_crop)
 
     return res, exd_boxes
 
@@ -395,7 +392,7 @@ def ellipseFit(regions, bin_thres=10, max_region=False, view=False):
                 cv2.fillConvexPoly(thresh, contours[j], 0)
             cv2.fillConvexPoly(thresh, contours[max_idx], 255)
 
-            kernel = np.ones((5, 5), np.uint8)  # 设置卷积核
+            kernel = np.ones((23, 23), np.uint8)  # 设置卷积核
             erosion = cv2.erode(thresh, kernel=kernel)  # 腐蚀操作
 
             ret, thresh = cv2.threshold(erosion, bin_thres, 255, cv2.THRESH_BINARY)

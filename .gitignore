@@ -138,6 +138,7 @@ dmypy.json
 cython_debug/
 
 # Other repos
+darknet-to-supervisely/
 supervisely-to-darknet/
 YOLOv3-Calculate-Anchor-Boxes/
 yolov3/

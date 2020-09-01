@@ -1,7 +1,5 @@
 # project-diary
 
-中文 | [EN](./README-EN.md) 
-
 
 ## 规则
 

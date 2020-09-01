@@ -282,11 +282,11 @@ def colorMask(region, color, thres=50):
     return masked_region
 
 
-def crop_bbox(img, boxes):
-    if isinstance(boxes, list):
-        boxes = np.asarray(boxes)
-
-    xyxy = boxes[:, 2:].astype(int)
+def crop_bbox(img, boxes, raw=False):
+    if raw:
+        xyxy = boxes[:, 1:].astype(int)
+    else:
+        xyxy = boxes[:, 2:].astype(int)
     crops = []
     for i in range(boxes.shape[0]):
         crop_img = img[xyxy[i, 1]:xyxy[i, 3], xyxy[i, 0]:xyxy[i, 2]]

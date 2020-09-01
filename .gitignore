@@ -146,6 +146,16 @@ weights/
 stage1-output/
 kmeans_pytorch/
 open_egohands/
+hand64/
+SkinDetector/
+handcnn/
+epic-kitchens-download-scripts/
+results/
+scripts/
 
 # Deploy shell
 deploy.sh
+
+# Some unwanted python scripts
+modify.ipynb
+*.py
